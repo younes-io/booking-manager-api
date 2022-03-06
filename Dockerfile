@@ -12,7 +12,7 @@ COPY ./tsconf* ./
 RUN npm run prebuild
 RUN npm run build
 
-# Build Stage 2
+# Production Stage
 # This build takes the production build from staging build
 #
 FROM node:16.14.0-alpine AS app

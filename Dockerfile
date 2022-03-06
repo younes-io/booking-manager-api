@@ -18,6 +18,7 @@ RUN npm run build
 FROM node:16.14.0-alpine AS app
 WORKDIR /usr/src/app
 COPY package*.json ./
+COPY openapi.yaml ./
 RUN npm ci --production
 COPY --from=appbuild /usr/src/app/dist ./dist
 EXPOSE 3000

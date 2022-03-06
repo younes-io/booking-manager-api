@@ -1,0 +1,159 @@
+openapi: 3.0.1
+info:
+  title: Booking Manager API
+  description: 'This is a simple booking manager API'
+  contact:
+    email: dev@younes.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: https://localhost:3000/api/v1/
+tags:
+  - name: tables
+    description: Operations on tables of the restaurant
+  - name: timerange
+    description: Access to Petstore orders
+  - name: timeslots
+    description: Operations about timeslot
+paths:
+  /tables:
+    post:
+      tags:
+        - tables
+      summary: Add a new table to the restaurant
+      operationId: addTable
+      requestBody:
+        description: Table object that needs to be added to the restaurant
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Table'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Table'
+        required: true
+      responses:
+        201:
+          description: The table has been created and added to the restaurant
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /timerange:
+    post:
+      tags:
+        - timerange
+      summary: Set up the time range during which the restaurant is open
+      operationId: addTimeRange
+      requestBody:
+        description: Time Range to set up that determines when the restaurant opens and when it closes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeRange'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/TimeRange'
+        required: true
+      responses:
+        201:
+          description: The open and close hours of the restaurant have been set up
+          content: {}
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /timeslots:
+    get:
+      tags:
+        - timeslots
+      summary: Calculates then retrieves the time slots between the open hour and the close hours that a user can book
+      operationId: getTimeSlots
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfTimeSlots'
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    TimeSlot:
+      type: object
+      properties:
+        timeslot:
+          type: string
+          example: 20:30
+      xml:
+        name: TimeSlot
+    TimeRange:
+      # required:
+      # - openHour
+      # - closeHour
+      # - format
+      type: object
+      properties:
+        format:
+          type: string
+          example: hh:mm
+        openHour:
+          type: string
+          example: 19:00
+        closeHour:
+          type: string
+          example: 23:00
+      xml:
+        name: TimeRange
+    Table:
+      # required:
+      # - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: Milano
+      xml:
+        name: Table
+    ApiResponse:
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        type:
+          type: string
+        message:
+          type: string
+    ArrayOfTimeSlots:
+      type: array
+      items:
+        $ref: '#/components/schemas/TimeSlot'
+  securitySchemes:
+    petstore_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http://petstore.swagger.io/oauth/dialog
+          scopes:
+            write:pets: modify pets in your account
+            read:pets: read your pets
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header

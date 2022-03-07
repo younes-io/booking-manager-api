@@ -19,7 +19,9 @@ FROM node:16.14.0-alpine AS app
 WORKDIR /usr/src/app
 COPY package*.json ./
 COPY openapi.yaml ./
+COPY ./prisma ./
 RUN npm ci --production
+RUN npx prisma generate
 COPY --from=appbuild /usr/src/app/dist ./dist
 EXPOSE 3000
 RUN chown -R node /usr/src/app

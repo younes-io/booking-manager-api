@@ -1,15 +1,14 @@
 import { Middleware } from '@koa/router';
-import prisma from '../../database';
 import { getAllTables } from '../tables/helpers';
 import { getTimeslots } from '../timerange/helpers';
 import {
     bookReservation,
+    cancelReservation,
     createReservations,
     deleteReservations,
-    getAvailableReservation,
     getAllBookedReservations,
+    getAvailableReservation,
     getBookedReservation,
-    cancelReservation,
 } from './helpers';
 
 export const generateReservationsMiddleware: Middleware = async (ctx) => {

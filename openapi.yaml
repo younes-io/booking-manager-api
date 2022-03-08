@@ -103,8 +103,6 @@ paths:
           required: true
           schema:
             $ref: '#/components/schemas/ArrayOfReservationSlots'
-          # type: "string"
-          # format: "int64"
       summary: Get the reservation slots booked for a specific business day
       operationId: getServationSlots
       responses:
@@ -117,6 +115,98 @@ paths:
         400:
           description: Bad Request
           content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation:
+    post:
+      tags:
+        - reservation
+      summary: Make a reservation
+      operationId: makeAReservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationSlot'
+        404:
+          description: Reservation could not be created (e.g. The table Monaco is not available on 08-03-2022 at 20:00)
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+    put:
+      tags:
+        - reservation
+      summary: Edit a reservation
+      operationId: editAReservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingEdition'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BookingEdition'
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationSlot'
+        404:
+          description: Reservation could not be created (e.g. The table Monaco is not available on 08-03-2022 at 20:00)
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation/{businessDay}/{timeSlot}/{tableName}:
+    delete:
+      tags:
+        - reservation
+      summary: Delete a reservation
+      operationId: deleteAReservation
+      parameters:
+        - name: 'businessDay'
+          in: 'path'
+          description: 'business day of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/BusinessDayString'
+        - name: 'timeSlot'
+          in: 'path'
+          description: 'time slot of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/TimeSlotString'
+        - name: 'tableName'
+          in: 'path'
+          description: 'table name of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/TableNameString'
+      responses:
+        '400':
+          description: 'Invalid param supplied'
+        '404':
+          description: 'Reservation not found'
       security:
         - petstore_auth:
             - write:pets
@@ -163,6 +253,46 @@ components:
           example: Milano
       xml:
         name: Table
+    BusinessDay:
+      type: object
+      properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
+    BusinessDayString:
+      type: string
+      example: '16-03-2022'
+    TimeSlotString:
+      type: string
+      example: '20:00'
+    TableNameString:
+      type: string
+      example: 'Monaco'
+    BookingCreation:
+      type: object
+      properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
+      xml:
+        name: BookingCreation
+    BookingEdition:
+      type: object
+      properties:
+        currentTimeSlot:
+          type: string
+          example: '20:00'
+        TargetTimeSlot:
+          type: string
+          example: '21:00'
+        currentTableName:
+          type: string
+          example: 'Monaco'
+        targetTableName:
+          type: string
+          example: 'Tokyo'
+      xml:
+        name: BookingEdition
     ReservationSlot:
       # required:
       # - name

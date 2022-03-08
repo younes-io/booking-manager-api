@@ -15,8 +15,8 @@ tags:
     description: Operations on tables of the restaurant
   - name: timerange
     description: Access to Petstore orders
-  - name: timeslots
-    description: Operations about timeslot
+  - name: reservation
+    description: Operations about reservations
 paths:
   /tables:
     post:
@@ -71,19 +71,49 @@ paths:
             - write:pets
             - read:pets
       x-codegen-request-body-name: body
-  /timeslots:
-    get:
+  /reservation/generate:
+    post:
       tags:
-        - timeslots
-      summary: Calculates then retrieves the time slots between the open hour and the close hours that a user can book
-      operationId: getTimeSlots
+        - reservation
+      summary: Generates the reservation slots a user can book
+      operationId: generateReservationSlots
       responses:
         200:
           description: 'successful operation'
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ArrayOfTimeSlots'
+                $ref: '#/components/schemas/ArrayOfReservationSlots'
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation/{businessDay}:
+    get:
+      tags:
+        - reservation
+      parameters:
+        - name: 'businessDay'
+          in: 'path'
+          description: 'Business day for which the reservations should be retrieved'
+          required: true
+          schema:
+            $ref: '#/components/schemas/ArrayOfReservationSlots'
+          # type: "string"
+          # format: "int64"
+      summary: Get the reservation slots booked for a specific business day
+      operationId: getServationSlots
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfReservationSlots'
         400:
           description: Bad Request
           content: {}
@@ -120,6 +150,7 @@ components:
         businessDay:
           type: string
           example: '16-03-2022'
+          description: 'date in the format DD-MM-YYYY'
       xml:
         name: TimeRange
     Table:
@@ -132,20 +163,35 @@ components:
           example: Milano
       xml:
         name: Table
-    ApiResponse:
+    ReservationSlot:
+      # required:
+      # - name
       type: object
       properties:
-        code:
-          type: integer
-          format: int32
-        type:
+        slotId:
           type: string
-        message:
+          example: '6227a50ebbeb5c65eb5a6cd9'
+        tableId:
           type: string
-    ArrayOfTimeSlots:
+          example: '6227a4dbbbeb5c65eb5a6cd5'
+        tableName:
+          type: string
+          example: 'Tokyo'
+        slotStartHour:
+          type: string
+          example: '20:00'
+        businessDay:
+          type: string
+          example: '08-03-2022'
+        booked:
+          type: boolean
+          # example: false
+      xml:
+        name: ReservationSlot
+    ArrayOfReservationSlots:
       type: array
       items:
-        $ref: '#/components/schemas/TimeSlot'
+        $ref: '#/components/schemas/ReservationSlot'
   securitySchemes:
     petstore_auth:
       type: oauth2

@@ -8,6 +8,7 @@ services:
     #         dockerfile: ./Dockerfile
     #     environment:
     #         NODE_ENV: development
+    #         PORT_SERVER: 3000
     #         DATABASE_URL: mongodb://root:root@localhost:27017/db?authSource=admin&retryWrites=false
     #         WAIT_HOSTS: mongodb:27017
     #     ports:

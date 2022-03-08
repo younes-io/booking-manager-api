@@ -1,5 +1,5 @@
 import app from './routes';
 
-app.listen(3000, () => {
+app.listen(process.env.PORT_SERVER, () => {
     console.log(`App started.`);
 });

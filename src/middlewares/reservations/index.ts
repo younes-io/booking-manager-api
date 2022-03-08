@@ -1,17 +1,20 @@
 import { Middleware } from '@koa/router';
 import prisma from '../../database';
+import { getAllTables } from '../tables/helpers';
+import { getTimeslots } from '../timerange/helpers';
+import {
+    createReservations,
+    deleteReservations,
+    getBookedReservations,
+} from './helpers';
 
 export const generateReservationsMiddleware: Middleware = async (ctx) => {
     const { businessDay } = ctx.request.body;
 
-    await prisma.reservation.deleteMany({
-        where: { businessDay },
-    });
+    await deleteReservations(businessDay);
 
-    const allTables = await prisma.table.findMany();
-    const timeSlotsOfBusinessDay = await prisma.timeSlot.findMany({
-        where: { businessDay },
-    });
+    const allTables = await getAllTables();
+    const timeSlotsOfBusinessDay = await getTimeslots(businessDay);
 
     const reservations = allTables.flatMap((table) => {
         return timeSlotsOfBusinessDay.map((timeslot) => {
@@ -27,9 +30,7 @@ export const generateReservationsMiddleware: Middleware = async (ctx) => {
 
     if (reservations?.length > 0) {
         ctx.body = reservations;
-        await prisma.reservation.createMany({
-            data: reservations,
-        });
+        await createReservations(reservations);
         console.log(
             `${reservations.length} reservation slots have been generated for ${businessDay}`,
         );
@@ -43,9 +44,7 @@ export const generateReservationsMiddleware: Middleware = async (ctx) => {
 
 export const getBookedReservationsMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${ctx.params.businessDay}`);
-    const reservations = await prisma.reservation.findMany({
-        where: { businessDay: ctx.params.businessDay, booked: true },
-    });
+    const reservations = await getBookedReservations(ctx.params.businessDay);
     ctx.body = reservations;
 };
 

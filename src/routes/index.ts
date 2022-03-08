@@ -161,28 +161,87 @@ router
     })
     .put('/reservation', async (ctx, _next) => {
         console.log(`params => ${JSON.stringify(ctx.request.body)}`);
-        const { businessDay, timeSlot, tableName } = ctx.request.body;
-        const reservation = await prisma.reservation.findFirst({
+        const {
+            businessDay,
+            currentTimeSlot,
+            targetTimeSlot,
+            currentTableName,
+            targetTableName,
+        } = ctx.request.body;
+
+        const currentReservation = await prisma.reservation.findFirst({
             where: {
                 businessDay,
-                slotStartHour: timeSlot,
-                tableName,
-                booked: false,
+                slotStartHour: currentTimeSlot,
+                tableName: currentTableName,
+                booked: true,
             },
         });
-        if (reservation) {
-            const booking = await prisma.reservation.update({
-                where: { id: reservation.id },
-                data: { booked: true },
+
+        if (currentReservation) {
+            const targetReservation = await prisma.reservation.findFirst({
+                where: {
+                    businessDay,
+                    slotStartHour: targetTimeSlot,
+                    tableName: targetTableName,
+                    booked: false,
+                },
             });
-            ctx.body = booking;
+
+            if (targetReservation) {
+                const confirmedTargetReservation =
+                    await prisma.reservation.update({
+                        where: { id: targetReservation.id },
+                        data: {
+                            booked: true,
+                        },
+                    });
+                await prisma.reservation.update({
+                    where: { id: currentReservation.id },
+                    data: {
+                        booked: false,
+                    },
+                });
+                ctx.body = confirmedTargetReservation;
+            } else {
+                ctx.throw(
+                    `The table ${targetTableName} is not available at ${targetTimeSlot}. Please pick another timeslot.`,
+                    404,
+                );
+            }
         } else {
-            ctx.throw(
-                `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
-                404,
-            );
+            ctx.throw(`The reservation you want to edit does not exist.`, 404);
         }
-    });
+    })
+    .delete(
+        '/reservation/:businessDay/:timeSlot/:tableName',
+        async (ctx, _next) => {
+            console.log(`params => ${ctx.params}`);
+            const { businessDay, timeSlot, tableName } = ctx.params;
+            const reservationToCancel = await prisma.reservation.findFirst({
+                where: {
+                    businessDay,
+                    slotStartHour: timeSlot,
+                    tableName,
+                    booked: true,
+                },
+            });
+            if (reservationToCancel) {
+                const cancelledReservation = await prisma.reservation.update({
+                    where: { id: reservationToCancel.id },
+                    data: {
+                        booked: false,
+                    },
+                });
+                ctx.body = cancelledReservation;
+            } else {
+                ctx.throw(
+                    'The reservation you want to cancel does not exist',
+                    404,
+                );
+            }
+        },
+    );
 
 app.use(router.routes()).use(router.allowedMethods());
 

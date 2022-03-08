@@ -1,24 +1,37 @@
 version: '3.4'
 
 services:
-    bookingmanagerapi:
-        image: bookingmanagerapi
-        build:
-            context: .
-            dockerfile: ./Dockerfile
-        environment:
-            NODE_ENV: production
-        ports:
-            - 3000:3000
+    # bookingmanagerapi:
+    #     image: bookingmanagerapi
+    #     build:
+    #         context: .
+    #         dockerfile: ./Dockerfile
+    #     environment:
+    #         NODE_ENV: development
+    #         DATABASE_URL: mongodb://root:root@localhost:27017/db?authSource=admin&retryWrites=false
+    #         WAIT_HOSTS: mongodb:27017
+    #     ports:
+    #         - 3000:3000
+    #     links:
+    #         - mongodb_container
+    #     depends_on:
+    #         - mongodb_container
+    #     networks:
+    #         - booking-api-network
     mongodb_container:
-        image: mongo:latest
+        # This image automatically creates a replica set required for transactions
+        image: prismagraphql/mongo-single-replica:4.4.3-bionic
         environment:
             MONGO_INITDB_ROOT_USERNAME: root
             MONGO_INITDB_ROOT_PASSWORD: root
+            MONGO_INITDB_DATABASE: db
         ports:
             - 27017:27017
-        volumes:
-            - mongodb_data_container:/data/db
+        # volumes:
+        #     - mongodb_data_container:/data/db
 
-volumes:
-    mongodb_data_container:
+networks:
+    booking-api-network:
+        driver: bridge
+# volumes:
+#     mongodb_data_container:

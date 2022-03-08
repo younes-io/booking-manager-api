@@ -77,6 +77,15 @@ paths:
         - reservation
       summary: Generates the reservation slots a user can book
       operationId: generateReservationSlots
+      requestBody:
+        description: Time Range to set up that determines when the restaurant opens and when it closes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
       responses:
         200:
           description: 'successful operation'
@@ -102,7 +111,7 @@ paths:
           description: 'Business day for which the reservations should be retrieved'
           required: true
           schema:
-            $ref: '#/components/schemas/ArrayOfReservationSlots'
+            $ref: '#/components/schemas/BusinessDayString'
       summary: Get the reservation slots booked for a specific business day
       operationId: getServationSlots
       responses:
@@ -130,10 +139,10 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/BusinessDay'
+              $ref: '#/components/schemas/BookingCreation'
           application/xml:
             schema:
-              $ref: '#/components/schemas/BusinessDay'
+              $ref: '#/components/schemas/BookingCreation'
       responses:
         200:
           description: 'successful operation'
@@ -236,7 +245,7 @@ components:
           example: '23:00'
         slotInterval:
           type: integer
-          example: 15
+          example: 60
         businessDay:
           type: string
           example: '16-03-2022'
@@ -274,6 +283,12 @@ components:
         businessDay:
           type: string
           example: '16-03-2022'
+        timeSlot:
+          type: string
+          example: '20:00'
+        tableName:
+          type: string
+          example: 'Monaco'
       xml:
         name: BookingCreation
     BookingEdition:

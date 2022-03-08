@@ -6,8 +6,10 @@ import {
     bookReservation,
     createReservations,
     deleteReservations,
-    getAvailableReservations,
-    getBookedReservations,
+    getAvailableReservation,
+    getAllBookedReservations,
+    getBookedReservation,
+    cancelReservation,
 } from './helpers';
 
 export const generateReservationsMiddleware: Middleware = async (ctx) => {
@@ -46,14 +48,14 @@ export const generateReservationsMiddleware: Middleware = async (ctx) => {
 
 export const getBookedReservationsMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${ctx.params.businessDay}`);
-    const reservations = await getBookedReservations(ctx.params.businessDay);
+    const reservations = await getAllBookedReservations(ctx.params.businessDay);
     ctx.body = reservations;
 };
 
 export const bookReservationMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${JSON.stringify(ctx.request.body)}`);
     const { businessDay, timeSlot, tableName } = ctx.request.body;
-    const reservation = await getAvailableReservations(
+    const reservation = await getAvailableReservation(
         businessDay,
         timeSlot,
         tableName,
@@ -80,38 +82,24 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
         targetTableName,
     } = ctx.request.body;
 
-    const currentReservation = await prisma.reservation.findFirst({
-        where: {
-            businessDay,
-            slotStartHour: currentTimeSlot,
-            tableName: currentTableName,
-            booked: true,
-        },
-    });
+    const currentReservation = await getBookedReservation(
+        businessDay,
+        currentTimeSlot,
+        currentTableName,
+    );
 
     if (currentReservation) {
-        const targetReservation = await prisma.reservation.findFirst({
-            where: {
-                businessDay,
-                slotStartHour: targetTimeSlot,
-                tableName: targetTableName,
-                booked: false,
-            },
-        });
+        const targetReservation = await getAvailableReservation(
+            businessDay,
+            targetTimeSlot,
+            targetTableName,
+        );
 
         if (targetReservation) {
-            const confirmedTargetReservation = await prisma.reservation.update({
-                where: { id: targetReservation.id },
-                data: {
-                    booked: true,
-                },
-            });
-            await prisma.reservation.update({
-                where: { id: currentReservation.id },
-                data: {
-                    booked: false,
-                },
-            });
+            const confirmedTargetReservation = await bookReservation(
+                targetReservation.id,
+            );
+            await cancelReservation(currentReservation.id);
             ctx.body = confirmedTargetReservation;
         } else {
             ctx.throw(
@@ -127,21 +115,15 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
 export const cancelReservationMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${ctx.params}`);
     const { businessDay, timeSlot, tableName } = ctx.params;
-    const reservationToCancel = await prisma.reservation.findFirst({
-        where: {
-            businessDay,
-            slotStartHour: timeSlot,
-            tableName,
-            booked: true,
-        },
-    });
+    const reservationToCancel = await getBookedReservation(
+        businessDay,
+        timeSlot,
+        tableName,
+    );
     if (reservationToCancel) {
-        const cancelledReservation = await prisma.reservation.update({
-            where: { id: reservationToCancel.id },
-            data: {
-                booked: false,
-            },
-        });
+        const cancelledReservation = await cancelReservation(
+            reservationToCancel.id,
+        );
         ctx.body = cancelledReservation;
     } else {
         ctx.throw('The reservation you want to cancel does not exist', 404);

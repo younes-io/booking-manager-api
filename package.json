@@ -5,10 +5,10 @@
     "engines": {
         "node": ">= 16.13 <17"
     },
-    "type": "module",
     "devDependencies": {
         "@types/jest": "~27.0.2",
         "@types/koa": "^2.13.4",
+        "@types/koa__router": "^8.0.11",
         "@types/koa-bodyparser": "^4.3.6",
         "@types/koa-logger": "^3.1.2",
         "@types/node": "~16.11.6",
@@ -18,14 +18,18 @@
         "eslint-config-prettier": "~8.3.0",
         "eslint-plugin-jest": "~25.3.0",
         "jest": "~27.4.4",
+        "nodemon": "^2.0.15",
         "prettier": "~2.5.1",
+        "prisma": "^3.10.0",
         "rimraf": "~3.0.2",
         "ts-jest": "~27.1.1",
+        "ts-node": "^10.7.0",
         "tsutils": "~3.21.0",
         "typescript": "~4.5.3"
     },
     "scripts": {
-        "start": "npm run build && node dist/src/main.js",
+        "start": "node dist/src/main.js",
+        "dev": "npx nodemon ./src/main.ts",
         "clean": "rimraf coverage build dist tmp",
         "prebuild": "npm run lint",
         "build": "npx tsc -p tsconfig.release.json",
@@ -37,10 +41,13 @@
     "author": "Younes A <dev@younes.io>",
     "license": "MIT",
     "dependencies": {
+        "@koa/router": "^10.1.1",
+        "@prisma/client": "^3.10.0",
         "koa": "^2.13.4",
         "koa-bodyparser": "^4.3.0",
         "koa-logger": "^3.2.1",
         "koa-oas3": "^2.5.0",
+        "moment": "^2.29.1",
         "tslib": "~2.3.1"
     },
     "volta": {

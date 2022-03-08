@@ -279,6 +279,9 @@ components:
     BookingEdition:
       type: object
       properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
         currentTimeSlot:
           type: string
           example: '20:00'

@@ -15,7 +15,7 @@ datasource db {
 model Table {
   id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   name                String
-  reservationSlots    ReservationSlot[]
+  reservation         Reservation[]
 }
 
 model TimeRange {
@@ -31,10 +31,10 @@ model TimeSlot {
   id                  String    @id @default(auto()) @map("_id") @db.ObjectId
   slot                String
   businessDay         String
-  reservationSlots    ReservationSlot[]
+  reservation         Reservation[]
 }
 
-model ReservationSlot {
+model Reservation {
   id            String    @id @default(auto()) @map("_id") @db.ObjectId
   slot          TimeSlot  @relation(fields: [slotId,slotStartHour], references: [id,slot])
   slotId        String    @db.ObjectId
@@ -43,4 +43,5 @@ model ReservationSlot {
   tableId       String    @db.ObjectId
   tableName     String
   businessDay   String
+  booked        Boolean   @default(false)
 }

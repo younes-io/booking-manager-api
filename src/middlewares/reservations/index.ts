@@ -3,8 +3,10 @@ import prisma from '../../database';
 import { getAllTables } from '../tables/helpers';
 import { getTimeslots } from '../timerange/helpers';
 import {
+    bookReservation,
     createReservations,
     deleteReservations,
+    getAvailableReservations,
     getBookedReservations,
 } from './helpers';
 
@@ -51,19 +53,14 @@ export const getBookedReservationsMiddleware: Middleware = async (ctx) => {
 export const bookReservationMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${JSON.stringify(ctx.request.body)}`);
     const { businessDay, timeSlot, tableName } = ctx.request.body;
-    const reservation = await prisma.reservation.findFirst({
-        where: {
-            businessDay,
-            slotStartHour: timeSlot,
-            tableName,
-            booked: false,
-        },
-    });
+    const reservation = await getAvailableReservations(
+        businessDay,
+        timeSlot,
+        tableName,
+    );
+
     if (reservation) {
-        const booking = await prisma.reservation.update({
-            where: { id: reservation.id },
-            data: { booked: true },
-        });
+        const booking = await bookReservation(reservation.id);
         ctx.body = booking;
     } else {
         ctx.throw(

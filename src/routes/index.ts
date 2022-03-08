@@ -3,11 +3,15 @@ import Koa from 'koa';
 import bodyParser from 'koa-bodyparser';
 import logger from 'koa-logger';
 import { oas } from 'koa-oas3';
-import moment from 'moment';
 import path from 'path';
-import addTable from '../controllers/tables';
-import addTimeRange from '../controllers/timerange';
-import prisma from '../database';
+import {
+    bookReservationMiddleware,
+    cancelReservationMiddleware,
+    editReservationMiddleware,
+    generateReservationsMiddleware,
+} from '../middlewares/reservations';
+import addTablesMiddleware from '../middlewares/tables';
+import addTimeRangeMiddleware from '../middlewares/timerange';
 
 const app = new Koa();
 
@@ -29,218 +33,15 @@ const router = new Router({
 });
 
 router
-    .post('/tables', async (ctx, _next) => {
-        console.debug(`[/tables] Body = ${JSON.stringify(ctx.request.body)}`);
-        const tableName = ctx.request.body?.name;
-        ctx.body = await addTable(tableName);
-        console.log(`[/tables] table ${tableName} has been added`);
-    })
-    .post('/timerange', async (ctx, _next) => {
-        console.debug(
-            `[/timerange] Body = ${JSON.stringify(ctx.request.body)}`,
-        );
-
-        const { format, openHour, closeHour, slotInterval, businessDay } =
-            ctx.request.body;
-
-        await addTimeRange(
-            format,
-            openHour,
-            closeHour,
-            slotInterval,
-            businessDay,
-        );
-
-        const businessDayFormat = 'DD-MM-YYYY';
-        const startHour = moment(openHour, format);
-        const endHour = moment(closeHour, format);
-
-        const generatedSlots: Array<any> = [];
-        while (startHour < endHour) {
-            generatedSlots.push(startHour.format(format));
-            startHour.add(slotInterval, 'minutes');
-        }
-
-        console.log(
-            `Restaurant setup to open at ${openHour} and to close at ${closeHour} on ${moment(
-                businessDay,
-                businessDayFormat,
-            ).format(businessDayFormat)}`,
-        );
-
-        ctx.body = {
-            openingHours: { openHour, closeHour },
-            businessDay,
-            generatedSlots,
-        };
-
-        const timeSlots: Array<any> = generatedSlots.map((slot) => {
-            return { businessDay, slot };
-        });
-
-        await prisma.timeSlot.deleteMany({
-            where: { businessDay },
-        });
-        await prisma.timeSlot.createMany({
-            data: timeSlots,
-        });
-
-        console.log(
-            `Timeslots have been set up for the business day ${businessDay}.`,
-        );
-    })
-    .post('/reservation/generate', async (ctx, _next) => {
-        const { businessDay } = ctx.request.body;
-
-        await prisma.reservation.deleteMany({
-            where: { businessDay },
-        });
-
-        const allTables = await prisma.table.findMany();
-        const timeSlotsOfBusinessDay = await prisma.timeSlot.findMany({
-            where: { businessDay },
-        });
-
-        const reservations = allTables.flatMap((table) => {
-            return timeSlotsOfBusinessDay.map((timeslot) => {
-                return {
-                    slotId: timeslot.id,
-                    tableId: table.id,
-                    tableName: table.name,
-                    slotStartHour: timeslot.slot,
-                    businessDay,
-                };
-            });
-        });
-
-        if (reservations?.length > 0) {
-            ctx.body = reservations;
-            await prisma.reservation.createMany({
-                data: reservations,
-            });
-            console.log(
-                `${reservations.length} reservation slots have been generated for ${businessDay}`,
-            );
-        } else {
-            ctx.throw(
-                `Could not generate reservations for ${businessDay}. Please add a time range for ${businessDay} first.`,
-                404,
-            );
-        }
-    })
-    .get('/reservation/:businessDay', async (ctx, _next) => {
-        console.log(`params => ${ctx.params.businessDay}`);
-        const reservations = await prisma.reservation.findMany({
-            where: { businessDay: ctx.params.businessDay, booked: true },
-        });
-        ctx.body = reservations;
-    })
-    .post('/reservation', async (ctx, _next) => {
-        console.log(`params => ${JSON.stringify(ctx.request.body)}`);
-        const { businessDay, timeSlot, tableName } = ctx.request.body;
-        const reservation = await prisma.reservation.findFirst({
-            where: {
-                businessDay,
-                slotStartHour: timeSlot,
-                tableName,
-                booked: false,
-            },
-        });
-        if (reservation) {
-            const booking = await prisma.reservation.update({
-                where: { id: reservation.id },
-                data: { booked: true },
-            });
-            ctx.body = booking;
-        } else {
-            ctx.throw(
-                `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
-                404,
-            );
-        }
-    })
-    .put('/reservation', async (ctx, _next) => {
-        console.log(`params => ${JSON.stringify(ctx.request.body)}`);
-        const {
-            businessDay,
-            currentTimeSlot,
-            targetTimeSlot,
-            currentTableName,
-            targetTableName,
-        } = ctx.request.body;
-
-        const currentReservation = await prisma.reservation.findFirst({
-            where: {
-                businessDay,
-                slotStartHour: currentTimeSlot,
-                tableName: currentTableName,
-                booked: true,
-            },
-        });
-
-        if (currentReservation) {
-            const targetReservation = await prisma.reservation.findFirst({
-                where: {
-                    businessDay,
-                    slotStartHour: targetTimeSlot,
-                    tableName: targetTableName,
-                    booked: false,
-                },
-            });
-
-            if (targetReservation) {
-                const confirmedTargetReservation =
-                    await prisma.reservation.update({
-                        where: { id: targetReservation.id },
-                        data: {
-                            booked: true,
-                        },
-                    });
-                await prisma.reservation.update({
-                    where: { id: currentReservation.id },
-                    data: {
-                        booked: false,
-                    },
-                });
-                ctx.body = confirmedTargetReservation;
-            } else {
-                ctx.throw(
-                    `The table ${targetTableName} is not available at ${targetTimeSlot}. Please pick another timeslot.`,
-                    404,
-                );
-            }
-        } else {
-            ctx.throw(`The reservation you want to edit does not exist.`, 404);
-        }
-    })
+    .post('/tables', addTablesMiddleware)
+    .post('/timerange', addTimeRangeMiddleware)
+    .post('/reservation/generate', generateReservationsMiddleware)
+    .get('/reservation/:businessDay')
+    .post('/reservation', bookReservationMiddleware)
+    .put('/reservation', editReservationMiddleware)
     .delete(
         '/reservation/:businessDay/:timeSlot/:tableName',
-        async (ctx, _next) => {
-            console.log(`params => ${ctx.params}`);
-            const { businessDay, timeSlot, tableName } = ctx.params;
-            const reservationToCancel = await prisma.reservation.findFirst({
-                where: {
-                    businessDay,
-                    slotStartHour: timeSlot,
-                    tableName,
-                    booked: true,
-                },
-            });
-            if (reservationToCancel) {
-                const cancelledReservation = await prisma.reservation.update({
-                    where: { id: reservationToCancel.id },
-                    data: {
-                        booked: false,
-                    },
-                });
-                ctx.body = cancelledReservation;
-            } else {
-                ctx.throw(
-                    'The reservation you want to cancel does not exist',
-                    404,
-                );
-            }
-        },
+        cancelReservationMiddleware,
     );
 
 app.use(router.routes()).use(router.allowedMethods());

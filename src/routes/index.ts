@@ -9,6 +9,7 @@ import {
     cancelReservationMiddleware,
     editReservationMiddleware,
     generateReservationsMiddleware,
+    getBookedReservationsMiddleware,
 } from '../middlewares/reservations';
 import addTablesMiddleware from '../middlewares/tables';
 import addTimeRangeMiddleware from '../middlewares/timerange';
@@ -36,7 +37,7 @@ router
     .post('/tables', addTablesMiddleware)
     .post('/timerange', addTimeRangeMiddleware)
     .post('/reservation/generate', generateReservationsMiddleware)
-    .get('/reservation/:businessDay')
+    .get('/reservation/:businessDay', getBookedReservationsMiddleware)
     .post('/reservation', bookReservationMiddleware)
     .put('/reservation', editReservationMiddleware)
     .delete(

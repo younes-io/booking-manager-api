@@ -300,7 +300,7 @@ components:
         currentTimeSlot:
           type: string
           example: '20:00'
-        TargetTimeSlot:
+        targetTimeSlot:
           type: string
           example: '21:00'
         currentTableName:

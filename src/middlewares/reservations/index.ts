@@ -87,11 +87,16 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
         currentTableName,
     );
 
+    console.log(`currentReservation => ${JSON.stringify(currentReservation)}`);
+
     if (currentReservation) {
         const targetReservation = await getAvailableReservation(
             businessDay,
             targetTimeSlot,
             targetTableName,
+        );
+        console.log(
+            `targetReservation => ${JSON.stringify(targetReservation)}`,
         );
 
         if (targetReservation) {

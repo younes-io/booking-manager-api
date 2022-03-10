@@ -12,6 +12,7 @@
         "@types/koa-bodyparser": "^4.3.6",
         "@types/koa-logger": "^3.1.2",
         "@types/node": "~16.11.6",
+        "@types/supertest": "^2.0.11",
         "@typescript-eslint/eslint-plugin": "~5.7.0",
         "@typescript-eslint/parser": "~5.7.0",
         "eslint": "~8.4.1",
@@ -24,6 +25,7 @@
         "prettier": "~2.5.1",
         "prisma": "^3.10.0",
         "rimraf": "~3.0.2",
+        "supertest": "^6.2.2",
         "ts-jest": "~27.1.1",
         "ts-node": "^10.7.0",
         "tsutils": "~3.21.0",
@@ -37,8 +39,8 @@
         "build": "npx tsc -p tsconfig.release.json",
         "build:watch": "tsc -w -p tsconfig.release.json",
         "lint": "npx eslint . --ext .ts,.tsx",
-        "test": "npx jest -i --silent",
-        "test:watch": "npx jest -i --watchAll "
+        "test": "npx jest -i --verbose",
+        "test:watch": "npx jest -i --verbose --watchAll "
     },
     "author": "Younes A <dev@younes.io>",
     "license": "MIT",

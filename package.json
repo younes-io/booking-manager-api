@@ -36,8 +36,8 @@
         "build": "npx tsc -p tsconfig.release.json",
         "build:watch": "tsc -w -p tsconfig.release.json",
         "lint": "npx eslint . --ext .ts,.tsx",
-        "test": "npx jest --coverage",
-        "test:watch": "jest --watch"
+        "test": "npx jest -i",
+        "test:watch": "npx jest -i --watchAll"
     },
     "author": "Younes A <dev@younes.io>",
     "license": "MIT",

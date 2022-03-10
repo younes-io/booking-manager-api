@@ -10,5 +10,8 @@ module.exports = {
     testPathIgnorePatterns: ['/__tests__/.*\\.mock.ts'],
     clearMocks: true,
     preset: 'ts-jest',
-    setupFilesAfterEnv: ['<rootDir>/__tests__/prisma.mock.ts'],
+    setupFilesAfterEnv: [
+        '<rootDir>/__tests__/mocks/prisma.mock.ts',
+        '<rootDir>/__tests__/mocks/console.mock.ts',
+    ],
 };

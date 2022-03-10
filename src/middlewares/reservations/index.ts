@@ -60,6 +60,8 @@ export const bookReservationMiddleware: Middleware = async (ctx) => {
         tableName,
     );
 
+    console.log(`reservation => ${JSON.stringify(reservation)}`);
+
     if (reservation) {
         const booking = await bookReservation(reservation.id);
         ctx.body = booking;

@@ -8,4 +8,7 @@ module.exports = {
     coverageDirectory: 'coverage',
     collectCoverageFrom: ['src/**/*.{ts,tsx,js,jsx}', '!src/**/*.d.ts'],
     testPathIgnorePatterns: ['/__tests__/.*\\.mock.ts'],
+    clearMocks: true,
+    preset: 'ts-jest',
+    setupFilesAfterEnv: ['<rootDir>/__tests__/prisma.mock.ts'],
 };

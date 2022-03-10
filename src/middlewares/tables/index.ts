@@ -1,7 +1,7 @@
 import { Middleware } from '@koa/router';
 import prisma from '../../database';
 
-const addTable = async (name: string) => {
+export const addTable = async (name: string) => {
     console.log(`Adding the table ${name}`);
     const newTable = await prisma.table.create({
         data: {
@@ -9,7 +9,7 @@ const addTable = async (name: string) => {
         },
     });
     console.log(`New table = ${JSON.stringify(newTable)}`);
-    return { result: 'OK', table: name };
+    return { result: 'OK', table: newTable.name };
 };
 
 const addTablesMiddleware: Middleware = async (ctx) => {

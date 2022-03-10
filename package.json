@@ -17,6 +17,7 @@
         "eslint": "~8.4.1",
         "eslint-config-prettier": "~8.3.0",
         "eslint-plugin-jest": "~25.3.0",
+        "fast-check": "^2.22.0",
         "jest": "~27.4.4",
         "jest-mock-extended": "^2.0.4",
         "nodemon": "^2.0.15",
@@ -36,8 +37,8 @@
         "build": "npx tsc -p tsconfig.release.json",
         "build:watch": "tsc -w -p tsconfig.release.json",
         "lint": "npx eslint . --ext .ts,.tsx",
-        "test": "npx jest -i",
-        "test:watch": "npx jest -i --watchAll"
+        "test": "npx jest -i --silent",
+        "test:watch": "npx jest -i --watchAll "
     },
     "author": "Younes A <dev@younes.io>",
     "license": "MIT",

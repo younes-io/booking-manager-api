@@ -1,4 +1,6 @@
 import { Middleware } from '@koa/router';
+import { Context } from 'koa';
+import LockService, { getLockKey } from '../../services/lock';
 import { getAllTables } from '../tables/helpers';
 import { getTimeslots } from '../timerange/helpers';
 import {
@@ -51,26 +53,32 @@ export const getBookedReservationsMiddleware: Middleware = async (ctx) => {
     ctx.body = reservations;
 };
 
-export const bookReservationMiddleware: Middleware = async (ctx) => {
+export const bookReservationMiddleware = async (ctx: Context) => {
     console.log(`params => ${JSON.stringify(ctx.request.body)}`);
     const { businessDay, timeSlot, tableName } = ctx.request.body;
-    const reservation = await getAvailableReservation(
-        businessDay,
-        timeSlot,
-        tableName,
-    );
 
-    console.log(`reservation => ${JSON.stringify(reservation)}`);
-
-    if (reservation) {
-        const booking = await bookReservation(reservation.id);
-        ctx.body = booking;
-    } else {
-        ctx.throw(
-            `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
-            404,
+    const lockKey = getLockKey({ businessDay, timeSlot, tableName });
+    await LockService.acquire(lockKey, async () => {
+        const reservation = await getAvailableReservation(
+            businessDay,
+            timeSlot,
+            tableName,
         );
-    }
+
+        console.log(`reservation => ${JSON.stringify(reservation)}`);
+
+        if (reservation && !reservation?.booked) {
+            const booking = await bookReservation(reservation.id);
+            ctx.body = booking;
+        } else {
+            ctx.throw(
+                `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
+                404,
+            );
+        }
+    });
+    console.log(`LockKey, isBusy? => ${LockService.isBusy(lockKey)}`);
+    console.log(`LockKey id => ${lockKey}`);
 };
 
 export const editReservationMiddleware: Middleware = async (ctx) => {
@@ -83,55 +91,75 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
         targetTableName,
     } = ctx.request.body;
 
-    const currentReservation = await getBookedReservation(
+    const lockKeyCurrent = getLockKey({
         businessDay,
-        currentTimeSlot,
-        currentTableName,
-    );
+        timeSlot: currentTimeSlot,
+        tableName: currentTableName,
+    });
 
-    console.log(`currentReservation => ${JSON.stringify(currentReservation)}`);
+    const lockKeyTarget = getLockKey({
+        businessDay,
+        timeSlot: targetTimeSlot,
+        tableName: targetTableName,
+    });
 
-    if (currentReservation) {
-        const targetReservation = await getAvailableReservation(
+    await LockService.acquire([lockKeyCurrent, lockKeyTarget], async () => {
+        const currentReservation = await getBookedReservation(
             businessDay,
-            targetTimeSlot,
-            targetTableName,
-        );
-        console.log(
-            `targetReservation => ${JSON.stringify(targetReservation)}`,
+            currentTimeSlot,
+            currentTableName,
         );
 
-        if (targetReservation) {
-            const confirmedTargetReservation = await bookReservation(
-                targetReservation.id,
+        console.log(
+            `currentReservation => ${JSON.stringify(currentReservation)}`,
+        );
+
+        if (currentReservation) {
+            const targetReservation = await getAvailableReservation(
+                businessDay,
+                targetTimeSlot,
+                targetTableName,
             );
-            await cancelReservation(currentReservation.id);
-            ctx.body = confirmedTargetReservation;
+            console.log(
+                `targetReservation => ${JSON.stringify(targetReservation)}`,
+            );
+
+            if (targetReservation) {
+                const confirmedTargetReservation = await bookReservation(
+                    targetReservation.id,
+                );
+                await cancelReservation(currentReservation.id);
+                ctx.body = confirmedTargetReservation;
+            } else {
+                ctx.throw(
+                    `The table ${targetTableName} is not available at ${targetTimeSlot}. Please pick another timeslot.`,
+                    404,
+                );
+            }
         } else {
-            ctx.throw(
-                `The table ${targetTableName} is not available at ${targetTimeSlot}. Please pick another timeslot.`,
-                404,
-            );
+            ctx.throw(`The reservation you want to edit does not exist.`, 404);
         }
-    } else {
-        ctx.throw(`The reservation you want to edit does not exist.`, 404);
-    }
+    });
 };
 
 export const cancelReservationMiddleware: Middleware = async (ctx) => {
     console.log(`params => ${ctx.params}`);
     const { businessDay, timeSlot, tableName } = ctx.params;
-    const reservationToCancel = await getBookedReservation(
-        businessDay,
-        timeSlot,
-        tableName,
-    );
-    if (reservationToCancel) {
-        const cancelledReservation = await cancelReservation(
-            reservationToCancel.id,
+
+    const lockKey = getLockKey({ businessDay, timeSlot, tableName });
+    await LockService.acquire(lockKey, async () => {
+        const reservationToCancel = await getBookedReservation(
+            businessDay,
+            timeSlot,
+            tableName,
         );
-        ctx.body = cancelledReservation;
-    } else {
-        ctx.throw('The reservation you want to cancel does not exist', 404);
-    }
+        if (reservationToCancel) {
+            const cancelledReservation = await cancelReservation(
+                reservationToCancel.id,
+            );
+            ctx.body = cancelledReservation;
+        } else {
+            ctx.throw('The reservation you want to cancel does not exist', 404);
+        }
+    });
 };

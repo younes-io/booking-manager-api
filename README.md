@@ -53,9 +53,9 @@ The public endpoints being open to the public may experience race conditions and
 
 This shows that we need a synchronization in our system to make sure all asynchronous requests are being handled in a safe way.
 
-### Writing a formal specification of the problem
+### Writing a formal specification of the problem (in TLA+)
 
-The need of a formal specification is justified for this problem :
+The need for a formal specification is justified for this problem :
 
 - The system should manage access (bookings/reservations) to limited resources (tables & timeslots) according to a set of rules, such as availability and synchronization.
 - Handling concurrency and resource management can be error prone and thus lead to bugs (design bugs are the worst)
@@ -69,7 +69,62 @@ After running the model, these are the results for each action :
 
 **N.B**: I have not represented in the specification the actions of adding tables or setting up opening hours because these are setup requests, so I represented them as constants in the sepcification. They also are not concerned by the race conditions / concurrency issues we want to prevent.
 
-### The formal specification helps to find
+### The formal specification helps to write test scenarios
+
+Running the model of the specification helps detect deadlocks, and also states that violate the invariants (properties that should always be true).
+
+For example, one of the properties of the system is that at any point in time, the system should never allow two users to book the same table at the same timeslot (This invariant is called _TwoCustomersShouldNotBookTheSameReservation_ in the TLA+ specification). This could very well represent a test case which would detect race conditions.
+
+### Concurrency & Race conditions : implementation-wise
+
+In order to prevent race conditions on the resources of the restaurant, I decided to use locks on each resource using `async-lock`. Every request that requires to do some operation on a reservation will first have to aquire a lock on that reservation, then do its processing, and finally releases the lock.
+
+If we take our prior example :
+
+1. User A sees that Table Monaco is free at 20:00
+2. User B sees that Table Monaco is free at 20:00
+3. Users A and B both click to book Table Monaco at 20:00
+4. **User B aquires lock on Table Monaco at 20:00**
+5. User A is WAITING for the lock on Table Monaco at 20:00
+6. BMA checks if Table Monaco is free at 20:00 for User B --> YES !!
+7. BMA books Table Monaco at 20:00 for User B
+8. **User B releases the lock**
+9. **User A aquires lock on Table Monaco at 20:00**
+10. BMA checks if Table Monaco is free at 20:00 for User B --> NO !!
+11. BMA REJECTS the User B to book Table Monaco at 20:00 ---> problem avoided !!
+12. **User A releases the lock**
+
+This way, we have prevented our system to be in a state where two users manage to book the same reservation.
+
+## WIP ~ next steps
+
+- Formal Specification (TLA+)
+
+  - [ ] Add other invariants to the model
+  - [ ] Add temporal properties to the model (e.g. check that all users are eventually able to book a table)
+
+- API
+
+  - [ ] Enhance the OpenAPI documentation (available on http://localhost:3000/api/v1/docs)
+  - [ ] Authentication feature using a Koa middleware
+  - [ ] Parameters validation & sanitization using a Koa middleware
+  - [ ] Enhance HTTP status codes management
+  - [ ] Enhance error handling
+
+- Testing
+
+  - [x] Mocking the Prisma Client (DB type-safe ORM)
+  - [ ] Testing valid / invalid tokens
+  - [ ] Test cases should focus on concurrency (why? because BMA is a resource management system, so concurrency could drive the system to undesirable states; these states should prevented by safe state transitions)
+  - [ ] Testing Koa middlewares
+  - [ ] Performance testing (run concurrently hundreds of requests from many API clients)
+
+- Docker
+
+  - [ ] Add liveness / readiness probes
+
+- Miscellaneous
+  - [ ] Profile the app to see the state of memory management
 
 ## Contributing
 

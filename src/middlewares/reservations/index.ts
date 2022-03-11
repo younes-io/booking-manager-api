@@ -77,8 +77,6 @@ export const bookReservationMiddleware = async (ctx: Context) => {
             );
         }
     });
-    console.log(`LockKey, isBusy? => ${LockService.isBusy(lockKey)}`);
-    console.log(`LockKey id => ${lockKey}`);
 };
 
 export const editReservationMiddleware: Middleware = async (ctx) => {

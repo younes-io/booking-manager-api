@@ -1,5 +1,5 @@
-import { Middleware } from '@koa/router';
 import prisma from '../../database';
+import { Middleware } from '@koa/router';
 
 export const addTable = async (name: string) => {
     console.log(`Adding the table ${name}`);

@@ -1,4 +1,5 @@
 import { Middleware } from '@koa/router';
+import { Context } from 'koa';
 import moment from 'moment';
 import prisma from '../../database';
 
@@ -35,7 +36,7 @@ const addTimeRange = async (
     return { result: 'OK', timeRange };
 };
 
-const addTimeRangeMiddleware: Middleware = async (ctx) => {
+const addTimeRangeMiddleware: Middleware = async (ctx: Context) => {
     console.debug(`[/timerange] Body = ${JSON.stringify(ctx.request.body)}`);
 
     const { format, openHour, closeHour, slotInterval, businessDay } =

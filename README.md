@@ -69,6 +69,8 @@ After running the model, these are the results for each action :
 
 **N.B**: I have not represented in the specification the actions of adding tables or setting up opening hours because these are setup requests, so I represented them as constants in the sepcification. They also are not concerned by the race conditions / concurrency issues we want to prevent.
 
+### The formal specification helps to find
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

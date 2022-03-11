@@ -1,8 +1,12 @@
-import { prismaMock } from './mocks/prisma.mock';
-
 import supertest from 'supertest';
 import app from '../src/app';
+import { prismaMock } from './mocks/prisma.mock';
+
 const request = supertest(app.callback());
+
+afterAll(async () => {
+    await prismaMock.$disconnect();
+});
 
 const bookAReservationWithMocks = async ({
     businessDay,
@@ -35,11 +39,7 @@ const bookAReservationWithMocks = async ({
 };
 
 describe('Booking reservations', () => {
-    afterAll(async () => {
-        await prismaMock.$disconnect();
-    });
-
-    it('should book a reservation', async () => {
+    it('should book a reservation [POST /reservation]', async () => {
         const businessDay = '16-03-2022';
         const timeSlot = '20:00';
         const tableName = 'Milano';

@@ -1,38 +1,45 @@
 version: '3.4'
 
+networks:
+    booking-api-network:
+        driver: bridge
 services:
-    bookingmanagerapi:
-        image: bookingmanagerapi
-        build:
-            context: .
-            dockerfile: ./Dockerfile
-        environment:
-            NODE_ENV: development
-            PORT_SERVER: 3000
-            DATABASE_URL: mongodb://root:root@localhost:27017/db?authSource=admin&retryWrites=false
-            WAIT_HOSTS: mongodb:27017
-        ports:
-            - 3000:3000
-        links:
-            - mongodb_container
-        depends_on:
-            - mongodb_container
-        networks:
-            - booking-api-network
     mongodb_container:
         # This image automatically creates a replica set required for transactions
         image: prismagraphql/mongo-single-replica:4.4.3-bionic
+        restart: always
+        hostname: mongodb_container
         environment:
             MONGO_INITDB_ROOT_USERNAME: root
             MONGO_INITDB_ROOT_PASSWORD: root
             MONGO_INITDB_DATABASE: db
         ports:
             - 27017:27017
+        command: mongod
+        networks:
+            - booking-api-network
+    bookingmanagerapi:
+        image: bookingmanagerapi
+        restart: always
+        build:
+            context: .
+            dockerfile: ./Dockerfile
+        environment:
+            NODE_ENV: development
+            PORT_SERVER: 3000
+            DATABASE_URL: mongodb://root:root@mongodb_container:27017/db?authSource=admin&readPreference=primary&appname=bookingmanagerapi&directConnection=true&ssl=false&retryWrites=false
+            WAIT_HOSTS: mongodb_container:27017
+            WAIT_HOSTS_TIMEOUT: 300
+            WAIT_SLEEP_INTERVAL: 30
+            WAIT_HOST_CONNECT_TIMEOUT: 30
+        ports:
+            - 3000:3000
+        links:
+            - mongodb_container
+        depends_on:
+            - mongodb_container
+        command: sh -c "/wait && npm run start"
+        networks:
+            - booking-api-network
         # volumes:
         #     - mongodb_data_container:/data/db
-
-networks:
-    booking-api-network:
-        driver: bridge
-# volumes:
-#     mongodb_data_container:

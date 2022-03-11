@@ -1,0 +1,47 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["mongoDb"]
+
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Table {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                String
+  reservation         Reservation[]
+}
+
+model TimeRange {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  format        String
+  openHour      String
+  closeHour     String
+  businessDay   String    @unique
+  slotInterval  Int
+}
+
+model TimeSlot {
+  id                  String    @id @default(auto()) @map("_id") @db.ObjectId
+  slot                String
+  businessDay         String
+  reservation         Reservation[]
+}
+
+model Reservation {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  slot          TimeSlot  @relation(fields: [slotId,slotStartHour], references: [id,slot])
+  slotId        String    @db.ObjectId
+  slotStartHour String    
+  table         Table     @relation(fields: [tableId,tableName], references: [id, name])
+  tableId       String    @db.ObjectId
+  tableName     String
+  businessDay   String
+  booked        Boolean   @default(false)
+}

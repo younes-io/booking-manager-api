@@ -1,0 +1,355 @@
+openapi: 3.0.1
+info:
+  title: Booking Manager API
+  description: 'This is a simple booking manager API'
+  contact:
+    email: dev@younes.io
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000/api/v1/
+tags:
+  - name: tables
+    description: Operations on tables of the restaurant
+  - name: timerange
+    description: Access to Petstore orders
+  - name: reservation
+    description: Operations about reservations
+paths:
+  /tables:
+    post:
+      tags:
+        - tables
+      summary: Add a new table to the restaurant
+      operationId: addTable
+      requestBody:
+        description: Table object that needs to be added to the restaurant
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Table'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/Table'
+        required: true
+      responses:
+        201:
+          description: The table has been created and added to the restaurant
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /timerange:
+    post:
+      tags:
+        - timerange
+      summary: Set up the time range during which the restaurant is open
+      operationId: addTimeRange
+      requestBody:
+        description: Time Range to set up that determines when the restaurant opens and when it closes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TimeRange'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/TimeRange'
+        required: true
+      responses:
+        201:
+          description: The open and close hours of the restaurant have been set up
+          content: {}
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation/generate:
+    post:
+      tags:
+        - reservation
+      summary: Generates the reservation slots a user can book
+      operationId: generateReservationSlots
+      requestBody:
+        description: Time Range to set up that determines when the restaurant opens and when it closes
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BusinessDay'
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfReservationSlots'
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation/{businessDay}:
+    get:
+      tags:
+        - reservation
+      parameters:
+        - name: 'businessDay'
+          in: 'path'
+          description: 'Business day for which the reservations should be retrieved'
+          required: true
+          schema:
+            $ref: '#/components/schemas/BusinessDayString'
+      summary: Get the reservation slots booked for a specific business day
+      operationId: getServationSlots
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ArrayOfReservationSlots'
+        400:
+          description: Bad Request
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation:
+    post:
+      tags:
+        - reservation
+      summary: Make a reservation
+      operationId: makeAReservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingCreation'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BookingCreation'
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationSlot'
+        404:
+          description: Reservation could not be created (e.g. The table Monaco is not available on 08-03-2022 at 20:00)
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+    put:
+      tags:
+        - reservation
+      summary: Edit a reservation
+      operationId: editAReservation
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BookingEdition'
+          application/xml:
+            schema:
+              $ref: '#/components/schemas/BookingEdition'
+      responses:
+        200:
+          description: 'successful operation'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReservationSlot'
+        404:
+          description: Reservation could not be created (e.g. The table Monaco is not available on 08-03-2022 at 20:00)
+          content: {}
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+  /reservation/{businessDay}/{timeSlot}/{tableName}:
+    delete:
+      tags:
+        - reservation
+      summary: Delete a reservation
+      operationId: deleteAReservation
+      parameters:
+        - name: 'businessDay'
+          in: 'path'
+          description: 'business day of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/BusinessDayString'
+        - name: 'timeSlot'
+          in: 'path'
+          description: 'time slot of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/TimeSlotString'
+        - name: 'tableName'
+          in: 'path'
+          description: 'table name of the reservation that needs to be deleted'
+          required: true
+          schema:
+            $ref: '#/components/schemas/TableNameString'
+      responses:
+        '400':
+          description: 'Invalid param supplied'
+        '404':
+          description: 'Reservation not found'
+      security:
+        - petstore_auth:
+            - write:pets
+            - read:pets
+      x-codegen-request-body-name: body
+components:
+  schemas:
+    TimeSlot:
+      type: object
+      properties:
+        timeslot:
+          type: string
+          example: '20:30'
+      xml:
+        name: TimeSlot
+    TimeRange:
+      type: object
+      properties:
+        format:
+          type: string
+          example: 'HH:mm'
+        openHour:
+          type: string
+          example: '19:00'
+        closeHour:
+          type: string
+          example: '23:00'
+        slotInterval:
+          type: integer
+          example: 60
+        businessDay:
+          type: string
+          example: '16-03-2022'
+          description: 'date in the format DD-MM-YYYY'
+      xml:
+        name: TimeRange
+    Table:
+      # required:
+      # - name
+      type: object
+      properties:
+        name:
+          type: string
+          example: Milano
+      xml:
+        name: Table
+    BusinessDay:
+      type: object
+      properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
+    BusinessDayString:
+      type: string
+      example: '16-03-2022'
+    TimeSlotString:
+      type: string
+      example: '20:00'
+    TableNameString:
+      type: string
+      example: 'Monaco'
+    BookingCreation:
+      type: object
+      properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
+        timeSlot:
+          type: string
+          example: '20:00'
+        tableName:
+          type: string
+          example: 'Monaco'
+      xml:
+        name: BookingCreation
+    BookingEdition:
+      type: object
+      properties:
+        businessDay:
+          type: string
+          example: '16-03-2022'
+        currentTimeSlot:
+          type: string
+          example: '20:00'
+        targetTimeSlot:
+          type: string
+          example: '21:00'
+        currentTableName:
+          type: string
+          example: 'Monaco'
+        targetTableName:
+          type: string
+          example: 'Tokyo'
+      xml:
+        name: BookingEdition
+    ReservationSlot:
+      # required:
+      # - name
+      type: object
+      properties:
+        slotId:
+          type: string
+          example: '6227a50ebbeb5c65eb5a6cd9'
+        tableId:
+          type: string
+          example: '6227a4dbbbeb5c65eb5a6cd5'
+        tableName:
+          type: string
+          example: 'Tokyo'
+        slotStartHour:
+          type: string
+          example: '20:00'
+        businessDay:
+          type: string
+          example: '08-03-2022'
+        booked:
+          type: boolean
+          # example: false
+      xml:
+        name: ReservationSlot
+    ArrayOfReservationSlots:
+      type: array
+      items:
+        $ref: '#/components/schemas/ReservationSlot'
+  securitySchemes:
+    petstore_auth:
+      type: oauth2
+      flows:
+        implicit:
+          authorizationUrl: http://petstore.swagger.io/oauth/dialog
+          scopes:
+            write:pets: modify pets in your account
+            read:pets: read your pets
+    api_key:
+      type: apiKey
+      name: api_key
+      in: header

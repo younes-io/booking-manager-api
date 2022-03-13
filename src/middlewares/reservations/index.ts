@@ -57,26 +57,26 @@ export const bookReservationMiddleware = async (ctx: Context) => {
     console.log(`params => ${JSON.stringify(ctx.request.body)}`);
     const { businessDay, timeSlot, tableName } = ctx.request.body;
 
-    const lockKey = getLockKey({ businessDay, timeSlot, tableName });
-    await LockService.acquire(lockKey, async () => {
-        const reservation = await getAvailableReservation(
-            businessDay,
-            timeSlot,
-            tableName,
+    // const lockKey = getLockKey({ businessDay, timeSlot, tableName });
+    // await LockService.acquire(lockKey, async () => {
+    const reservation = await getAvailableReservation(
+        businessDay,
+        timeSlot,
+        tableName,
+    );
+
+    console.log(`reservation => ${JSON.stringify(reservation)}`);
+
+    if (reservation && !reservation?.booked) {
+        const booking = await bookReservation(reservation.id);
+        ctx.body = booking;
+    } else {
+        ctx.throw(
+            `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
+            404,
         );
-
-        console.log(`reservation => ${JSON.stringify(reservation)}`);
-
-        if (reservation && !reservation?.booked) {
-            const booking = await bookReservation(reservation.id);
-            ctx.body = booking;
-        } else {
-            ctx.throw(
-                `The table ${tableName} is not available on ${businessDay} at ${timeSlot}`,
-                404,
-            );
-        }
-    });
+    }
+    // });
 };
 
 export const editReservationMiddleware: Middleware = async (ctx) => {

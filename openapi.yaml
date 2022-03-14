@@ -289,6 +289,9 @@ components:
         tableName:
           type: string
           example: 'Monaco'
+        customerName:
+          type: string
+          example: 'Adam'
       xml:
         name: BookingCreation
     BookingEdition:

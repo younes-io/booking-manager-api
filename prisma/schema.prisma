@@ -44,4 +44,5 @@ model Reservation {
   tableName     String
   businessDay   String
   booked        Boolean   @default(false)
+  customerName  String
 }

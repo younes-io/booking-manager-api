@@ -55,7 +55,7 @@ export const getBookedReservationsMiddleware: Middleware = async (ctx) => {
 
 export const bookReservationMiddleware = async (ctx: Context) => {
     console.log(`params => ${JSON.stringify(ctx.request.body)}`);
-    const { businessDay, timeSlot, tableName } = ctx.request.body;
+    const { businessDay, timeSlot, tableName, customerName } = ctx.request.body;
 
     // const lockKey = getLockKey({ businessDay, timeSlot, tableName });
     // await LockService.acquire(lockKey, async () => {
@@ -68,7 +68,7 @@ export const bookReservationMiddleware = async (ctx: Context) => {
     console.log(`reservation => ${JSON.stringify(reservation)}`);
 
     if (reservation && !reservation?.booked) {
-        const booking = await bookReservation(reservation.id);
+        const booking = await bookReservation(reservation.id, customerName);
         ctx.body = booking;
     } else {
         ctx.throw(
@@ -87,6 +87,7 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
         targetTimeSlot,
         currentTableName,
         targetTableName,
+        customerName,
     } = ctx.request.body;
 
     const lockKeyCurrent = getLockKey({
@@ -125,6 +126,7 @@ export const editReservationMiddleware: Middleware = async (ctx) => {
             if (targetReservation) {
                 const confirmedTargetReservation = await bookReservation(
                     targetReservation.id,
+                    customerName,
                 );
                 await cancelReservation(currentReservation.id);
                 ctx.body = confirmedTargetReservation;

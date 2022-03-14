@@ -44,15 +44,18 @@ export const getAllBookedReservations = async (businessDay: string) =>
 
 export const updateReservation = async (
     reservationId: string,
+    customerName: string,
     booked: boolean,
 ) =>
     await prisma.reservation.update({
         where: { id: reservationId },
-        data: { booked },
+        data: { booked, customerName },
     });
 
-export const bookReservation = async (reservationId: string) =>
-    await updateReservation(reservationId, true);
+export const bookReservation = async (
+    reservationId: string,
+    customerName: string,
+) => await updateReservation(reservationId, customerName, true);
 
 export const cancelReservation = async (reservationId: string) =>
-    await updateReservation(reservationId, false);
+    await updateReservation(reservationId, '', false);

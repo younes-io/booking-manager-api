@@ -4,79 +4,88 @@ import supertest from 'supertest';
 import app from '../src/app';
 import { prismaMock } from './mocks/prisma.mock';
 
-// Hack to make iconv load the encodings module, otherwise jest crashes. Compare
-// https://github.com/sidorares/node-mysql2/issues/489
-// If the below is removed, calls to POST /api/v1/reservation return 415
-import * as iconv from 'iconv-lite';
-iconv.encodingExists('utf8');
-
 const request = supertest(app.callback());
 
 afterAll(async () => {
     await prismaMock.$disconnect();
 });
 
-const reservationAPI = async ({ businessDay, timeSlot, tableName }) => {
-    // console.log(`${businessDay}${timeSlot}${tableName}`);
-    const res = await request.post('/api/v1/reservation').type('json').send({
-        businessDay,
-        timeSlot,
-        tableName,
-    });
-    return JSON.stringify(res);
-};
-
 describe.only('WIP: Booking reservations : race conditions', () => {
     it('works', async () => {
-        fc.assert(
-            fc
-                .asyncProperty(fc.scheduler(), async (s) => {
-                    // Arrange
-                    const businessDay = '16-03-2022';
-                    const timeSlot = '20:00';
-                    const tableName = 'Milano';
-                    const reservation = {
-                        id: 'randomId',
-                        slotId: 'randomId',
-                        slotStartHour: timeSlot,
-                        tableId: 'randomId',
-                        tableName,
+        await fc.assert(
+            fc.asyncProperty(fc.scheduler(), async (s) => {
+                //  Arrange
+                const businessDay = '16-03-2022';
+                const timeSlot = '20:00';
+                const tableName = 'Milano';
+                const customerName = 'Adam';
+
+                const reservation = {
+                    id: 'randomId',
+                    slotId: 'randomId',
+                    slotStartHour: timeSlot,
+                    tableId: 'randomId',
+                    tableName,
+                    businessDay,
+                    booked: false,
+                    customerName,
+                };
+
+                prismaMock.reservation.findFirst.mockResolvedValue(reservation);
+                prismaMock.reservation.update.mockImplementation(
+                    s.scheduleFunction(async function update() {
+                        reservation.booked = true;
+                        return reservation;
+                    }) as any,
+                );
+                /* prismaMock.reservation.findFirst.mockReturnValue(
+                    s.schedule(
+                        Promise.resolve(reservation),
+                        'findFirst',
+                    ) as any,
+                );
+                prismaMock.reservation.update.mockReturnValue(
+                    s.schedule(
+                        Promise.resolve({ ...reservation, booked: true }),
+                        'update',
+                    ) as any,
+                ); */
+
+                const bookedReservationPromise = request
+                    .post('/api/v1/reservation')
+                    .set('Content-Type', 'application/json')
+                    .set('Accept', 'application/json')
+                    .send({
                         businessDay,
-                        booked: false,
-                    };
-                    prismaMock.reservation.findFirst.mockResolvedValue(
-                        reservation,
-                    );
-                    prismaMock.reservation.update.mockImplementation(
-                        s.scheduleFunction(async () => {
-                            return {
-                                ...reservation,
-                                booked: true,
-                            };
-                        }) as any,
-                    );
+                        timeSlot,
+                        tableName,
+                        customerName,
+                    });
 
-                    const scheduledRes = s.scheduleFunction(reservationAPI);
+                // Act
+                // s.schedule(
+                //     Promise.resolve(await bookedReservationPromise),
+                //     'inc1',
+                // );
+                // s.schedule(bookedReservationPromise)
 
-                    scheduledRes({ businessDay, timeSlot, tableName });
+                await s.waitAll();
 
-                    await s.waitOne();
-                    // Assert
-                    expect(s.report()).toBe(5);
-                    expect(s.count()).toBe(0);
-                })
-                // .afterEach(async () => {
-                //     await prismaMock.reservation.deleteMany();
-                //     jest.resetAllMocks();
-                //     jest.resetModules();
-                // })
-                .beforeEach(async () => {
-                    await prismaMock.reservation.deleteMany();
-                    jest.resetAllMocks();
-                    jest.resetModules();
-                }),
+                const bookedReservation = await bookedReservationPromise;
+                // const bookedReservation2 = await bookedReservationPromise;
+                //  Assert
+                // expect(s.report()).toEqual(200);
+                expect(bookedReservation.status).toEqual(200);
+                // expect(bookedReservation.body.booked).toEqual(true);
+                // expect(bookedReservation.body.slotStartHour).toEqual(timeSlot);
+                // expect(bookedReservation.body.tableName).toEqual(tableName);
 
-            { verbose: 2, numRuns: 1 },
+                // expect(bookedReservation2.status).toEqual(200);
+                // expect(bookedReservation2.body.booked).toEqual(true);
+                // expect(bookedReservation2.body.slotStartHour).toEqual(timeSlot);
+                // expect(bookedReservation2.body.tableName).toEqual(tableName);
+            }),
+            { verbose: 2, timeout: 2000 },
         );
     });
 });

@@ -105,6 +105,55 @@ describe('Booking reservations PBT', () => {
                 );
 
                 expect(bookedReservation1.status).toBe(404);
+                expect(bookedReservation1.text).toContain(
+                    'is not available on',
+                );
+                expect(bookedReservation1.body.booked).toBeUndefined();
+                expect(bookedReservation1.body.slotStartHour).toBeUndefined();
+                expect(bookedReservation1.body.tableName).toBeUndefined();
+                expect(bookedReservation1.body.customerName).toBeUndefined();
+            }),
+        );
+    });
+    it.skip('should handle race conditions', async () => {
+        const businessDay = '16-03-2022';
+        const timeSlot = '20:00';
+        const tableName = 'Milano';
+
+        const reservation = {
+            id: 'randomId',
+            slotId: 'randomId',
+            slotStartHour: timeSlot,
+            tableId: 'randomId',
+            tableName,
+            businessDay,
+            booked: false,
+            customerName: 'Adam',
+        };
+
+        await fc.assert(
+            fc.asyncProperty(fc.scheduler(), async (s) => {
+                prismaMock.reservation.findFirst.mockResolvedValue(reservation);
+
+                prismaMock.reservation.update.mockImplementation(
+                    s.scheduleFunction(async function update() {
+                        return { ...reservation, booked: true };
+                    }) as any,
+                );
+
+                const bookedReservation1 = await s.waitFor(
+                    request
+                        .post('/api/v1/reservation')
+                        .set('Content-Type', 'application/json')
+                        .set('Accept', 'application/json')
+                        .send({
+                            businessDay,
+                            timeSlot,
+                            tableName,
+                        }),
+                );
+
+                expect(bookedReservation1.status).toBe(404);
                 expect(bookedReservation1.body.booked).toBeUndefined();
                 expect(bookedReservation1.body.slotStartHour).toBeUndefined();
                 expect(bookedReservation1.body.tableName).toBeUndefined();

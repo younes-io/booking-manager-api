@@ -1,4 +1,4 @@
-// import fc from 'fast-check';
+import 'jest-extended';
 import fc from 'fast-check';
 import supertest from 'supertest';
 import app from '../src/app';
@@ -10,82 +10,106 @@ afterAll(async () => {
     await prismaMock.$disconnect();
 });
 
-describe.only('WIP: Booking reservations : race conditions', () => {
-    it('works', async () => {
+describe('Booking reservations PBT', () => {
+    it('should book a reservation if it is available', async () => {
+        const businessDay = '16-03-2022';
+        const timeSlot = '20:00';
+        const tableName = 'Milano';
+        const customerName = 'Adam';
+
+        const reservation = {
+            id: 'randomId',
+            slotId: 'randomId',
+            slotStartHour: timeSlot,
+            tableId: 'randomId',
+            tableName,
+            businessDay,
+            booked: false,
+            customerName: 'Adam',
+        };
+
         await fc.assert(
             fc.asyncProperty(fc.scheduler(), async (s) => {
-                //  Arrange
-                const businessDay = '16-03-2022';
-                const timeSlot = '20:00';
-                const tableName = 'Milano';
-                const customerName = 'Adam';
-
-                const reservation = {
-                    id: 'randomId',
-                    slotId: 'randomId',
-                    slotStartHour: timeSlot,
-                    tableId: 'randomId',
-                    tableName,
-                    businessDay,
-                    booked: false,
-                    customerName,
-                };
-
-                prismaMock.reservation.findFirst.mockResolvedValue(reservation);
-                prismaMock.reservation.update.mockImplementation(
-                    s.scheduleFunction(async function update() {
-                        reservation.booked = true;
+                prismaMock.reservation.findFirst.mockImplementation(
+                    s.scheduleFunction(async function findFirst() {
                         return reservation;
                     }) as any,
                 );
-                /* prismaMock.reservation.findFirst.mockReturnValue(
-                    s.schedule(
-                        Promise.resolve(reservation),
-                        'findFirst',
-                    ) as any,
+                prismaMock.reservation.update.mockImplementation(
+                    s.scheduleFunction(async function update() {
+                        return { ...reservation, booked: true };
+                    }) as any,
                 );
-                prismaMock.reservation.update.mockReturnValue(
-                    s.schedule(
-                        Promise.resolve({ ...reservation, booked: true }),
-                        'update',
-                    ) as any,
-                ); */
 
-                const bookedReservationPromise = request
-                    .post('/api/v1/reservation')
-                    .set('Content-Type', 'application/json')
-                    .set('Accept', 'application/json')
-                    .send({
-                        businessDay,
-                        timeSlot,
-                        tableName,
-                        customerName,
-                    });
+                const bookedReservation1 = await s.waitFor(
+                    request
+                        .post('/api/v1/reservation')
+                        .set('Content-Type', 'application/json')
+                        .set('Accept', 'application/json')
+                        .send({
+                            businessDay,
+                            timeSlot,
+                            tableName,
+                        }),
+                );
 
-                // Act
-                // s.schedule(
-                //     Promise.resolve(await bookedReservationPromise),
-                //     'inc1',
-                // );
-                // s.schedule(bookedReservationPromise)
-
-                await s.waitAll();
-
-                const bookedReservation = await bookedReservationPromise;
-                // const bookedReservation2 = await bookedReservationPromise;
-                //  Assert
-                // expect(s.report()).toEqual(200);
-                expect(bookedReservation.status).toEqual(200);
-                // expect(bookedReservation.body.booked).toEqual(true);
-                // expect(bookedReservation.body.slotStartHour).toEqual(timeSlot);
-                // expect(bookedReservation.body.tableName).toEqual(tableName);
-
-                // expect(bookedReservation2.status).toEqual(200);
-                // expect(bookedReservation2.body.booked).toEqual(true);
-                // expect(bookedReservation2.body.slotStartHour).toEqual(timeSlot);
-                // expect(bookedReservation2.body.tableName).toEqual(tableName);
+                expect(bookedReservation1.status).toBe(200);
+                expect(bookedReservation1.body.booked).toEqual(true);
+                expect(bookedReservation1.body.slotStartHour).toEqual(timeSlot);
+                expect(bookedReservation1.body.tableName).toEqual(tableName);
+                expect(bookedReservation1.body.customerName).toEqual(
+                    customerName,
+                );
             }),
-            { verbose: 2, timeout: 2000 },
+        );
+    });
+    it('should not book a reservation if it is unavailable', async () => {
+        const businessDay = '16-03-2022';
+        const timeSlot = '20:00';
+        const tableName = 'Milano';
+
+        const reservation = {
+            id: 'randomId',
+            slotId: 'randomId',
+            slotStartHour: timeSlot,
+            tableId: 'randomId',
+            tableName,
+            businessDay,
+            booked: true,
+            customerName: 'Adam',
+        };
+
+        await fc.assert(
+            fc.asyncProperty(fc.scheduler(), async (s) => {
+                prismaMock.reservation.findFirst.mockImplementation(
+                    s.scheduleFunction(async function findFirst() {
+                        return reservation;
+                    }) as any,
+                );
+                prismaMock.reservation.update.mockImplementation(
+                    s.scheduleFunction(async function update() {
+                        return { ...reservation, booked: true };
+                    }) as any,
+                );
+
+                const bookedReservation1 = await s.waitFor(
+                    request
+                        .post('/api/v1/reservation')
+                        .set('Content-Type', 'application/json')
+                        .set('Accept', 'application/json')
+                        .send({
+                            businessDay,
+                            timeSlot,
+                            tableName,
+                        }),
+                );
+
+                expect(bookedReservation1.status).toBe(404);
+                expect(bookedReservation1.body.booked).toBeUndefined();
+                expect(bookedReservation1.body.slotStartHour).toBeUndefined();
+                expect(bookedReservation1.body.tableName).toBeUndefined();
+                expect(bookedReservation1.body.customerName).toBeUndefined();
+            }),
         );
     });
 });

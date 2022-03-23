@@ -18,6 +18,7 @@ const bookAReservationMocked = async ({ businessDay, timeSlot, tableName }) => {
         tableName,
         businessDay,
         booked: false,
+        customerName: 'Adam',
     };
     prismaMock.reservation.findFirst.mockResolvedValue(reservation);
     prismaMock.reservation.update.mockResolvedValue({

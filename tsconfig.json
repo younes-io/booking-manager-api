@@ -19,6 +19,7 @@
         "noImplicitThis": false,
         "strictNullChecks": true
     },
+    "files": ["global.d.ts"],
     "include": ["src/**/*", "__tests__/**/*"],
-    "exclude": ["__tests__/mocks/*"]
+    "exclude": ["__tests__/*"]
 }

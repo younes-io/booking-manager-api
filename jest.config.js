@@ -13,5 +13,6 @@ module.exports = {
     setupFilesAfterEnv: [
         '<rootDir>/__tests__/mocks/prisma.mock.ts',
         '<rootDir>/__tests__/mocks/console.mock.ts',
+        'jest-extended/all',
     ],
 };

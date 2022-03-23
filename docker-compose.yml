@@ -18,28 +18,28 @@ services:
         command: mongod
         networks:
             - booking-api-network
-    bookingmanagerapi:
-        image: bookingmanagerapi
-        restart: always
-        build:
-            context: .
-            dockerfile: ./Dockerfile
-        environment:
-            NODE_ENV: development
-            PORT_SERVER: 3000
-            DATABASE_URL: mongodb://root:root@mongodb_container:27017/db?authSource=admin&readPreference=primary&appname=bookingmanagerapi&directConnection=true&ssl=false&retryWrites=false
-            WAIT_HOSTS: mongodb_container:27017
-            WAIT_HOSTS_TIMEOUT: 300
-            WAIT_SLEEP_INTERVAL: 30
-            WAIT_HOST_CONNECT_TIMEOUT: 30
-        ports:
-            - 3000:3000
-        links:
-            - mongodb_container
-        depends_on:
-            - mongodb_container
-        command: sh -c "/wait && npm run start"
-        networks:
-            - booking-api-network
-        # volumes:
-        #     - mongodb_data_container:/data/db
+    # bookingmanagerapi:
+    #     image: bookingmanagerapi
+    #     restart: always
+    #     build:
+    #         context: .
+    #         dockerfile: ./Dockerfile
+    #     environment:
+    #         NODE_ENV: development
+    #         PORT_SERVER: 3000
+    #         DATABASE_URL: mongodb://root:root@mongodb_container:27017/db?authSource=admin&readPreference=primary&appname=bookingmanagerapi&directConnection=true&ssl=false&retryWrites=false
+    #         WAIT_HOSTS: mongodb_container:27017
+    #         WAIT_HOSTS_TIMEOUT: 300
+    #         WAIT_SLEEP_INTERVAL: 30
+    #         WAIT_HOST_CONNECT_TIMEOUT: 30
+    #     ports:
+    #         - 3000:3000
+    #     links:
+    #         - mongodb_container
+    #     depends_on:
+    #         - mongodb_container
+    #     command: sh -c "/wait && npm run start"
+    #     networks:
+    #         - booking-api-network
+    # volumes:
+    #     - mongodb_data_container:/data/db

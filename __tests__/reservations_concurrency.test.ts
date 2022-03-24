@@ -115,49 +115,75 @@ describe('Booking reservations PBT', () => {
             }),
         );
     });
-    it.skip('should handle race conditions', async () => {
+    it('should handle race conditions', async () => {
         const businessDay = '16-03-2022';
         const timeSlot = '20:00';
         const tableName = 'Milano';
-
-        const reservation = {
-            id: 'randomId',
-            slotId: 'randomId',
-            slotStartHour: timeSlot,
-            tableId: 'randomId',
-            tableName,
-            businessDay,
-            booked: false,
-            customerName: 'Adam',
-        };
+        // const customerName = 'Adam';
 
         await fc.assert(
             fc.asyncProperty(fc.scheduler(), async (s) => {
-                prismaMock.reservation.findFirst.mockResolvedValue(reservation);
-
-                prismaMock.reservation.update.mockImplementation(
-                    s.scheduleFunction(async function update() {
-                        return { ...reservation, booked: true };
+                const reservation = {
+                    id: 'randomId',
+                    slotId: 'randomId',
+                    slotStartHour: timeSlot,
+                    tableId: 'randomId',
+                    tableName,
+                    businessDay,
+                    booked: false,
+                    customerName: 'Adam',
+                };
+                prismaMock.reservation.findFirst.mockImplementation(
+                    s.scheduleFunction(async function findFirst() {
+                        // if (!reservation.booked) return reservation;
+                        // return null;
+                        return reservation;
                     }) as any,
                 );
 
-                const bookedReservation1 = await s.waitFor(
-                    request
-                        .post('/api/v1/reservation')
-                        .set('Content-Type', 'application/json')
-                        .set('Accept', 'application/json')
-                        .send({
-                            businessDay,
-                            timeSlot,
-                            tableName,
-                        }),
+                prismaMock.reservation.update.mockImplementation(
+                    s.scheduleFunction(async function update() {
+                        reservation.booked = true;
+                        return reservation;
+                    }) as any,
                 );
 
-                expect(bookedReservation1.status).toBe(404);
-                expect(bookedReservation1.body.booked).toBeUndefined();
-                expect(bookedReservation1.body.slotStartHour).toBeUndefined();
-                expect(bookedReservation1.body.tableName).toBeUndefined();
-                expect(bookedReservation1.body.customerName).toBeUndefined();
+                const [bookedReservation1, bookedReservation2] =
+                    await Promise.all([
+                        s.waitFor(
+                            request
+                                .post('/api/v1/reservation')
+                                .set('Content-Type', 'application/json')
+                                .set('Accept', 'application/json')
+                                .send({
+                                    businessDay,
+                                    timeSlot,
+                                    tableName,
+                                }),
+                        ),
+                        s.waitFor(
+                            request
+                                .post('/api/v1/reservation')
+                                .set('Content-Type', 'application/json')
+                                .set('Accept', 'application/json')
+                                .send({
+                                    businessDay,
+                                    timeSlot,
+                                    tableName,
+                                }),
+                        ),
+                    ]);
+
+                expect(bookedReservation1.status).not.toEqual(
+                    bookedReservation2.status,
+                );
+                // expect(bookedReservation2.status).toBe(200);
+                // expect(bookedReservation1.body.booked).toEqual(true);
+                // expect(bookedReservation1.body.slotStartHour).toEqual(timeSlot);
+                // expect(bookedReservation1.body.tableName).toEqual(tableName);
+                // expect(bookedReservation1.body.customerName).toEqual(
+                //     customerName,
+                // );
             }),
         );
     });
